@@ -1,0 +1,11 @@
+:root {
+    --main-bg: royalblue;
+}
+
+html{
+    height: 100%;
+}
+
+.main-bg {
+    background: var(--main-bg) !important;
+}
