@@ -90,7 +90,7 @@ def register():
         session['username'] = username
 
         if User.query.filter_by(hp=hp).first():
-            flash('No. HP Telah Ada!', category='warning')
+            flash('No. HP sudah ada!', category='warning')
             return render_template('register.html')
         else:
             user = User(hp=hp, sandi=sandi, panggilan=panggilan, ktp=ktp, nama=nama, username=username)

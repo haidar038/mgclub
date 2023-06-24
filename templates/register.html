@@ -6,12 +6,24 @@
     <!-- Login Form -->
     <div class="container h-100">
         <div class="row justify-content-center align-items-center h-100">
+            <img class="w-25 mb-4" src="{{ url_for('static', filename='logo.webp') }}" alt="Logo Muara Group">
             <div class="col-lg-4 col-md-6 col-sm-6">
                 <div class="card shadow mb-4">
                     <div class="card-title text-center border-bottom">
                         <h2 class="p-3">Daftar</h2>
                     </div>
                     <div class="card-body">
+                        {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                        {% for category, message in messages %}
+                        <div class="alert alert-{{ category }} mb-3 alert-dismissible" role="alert">
+                            <strong>{{ message }}</strong>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"
+                                aria-label="Close"></button>'
+                        </div>
+                        {% endfor %}
+                        {% endif %}
+                        {% endwith %}
                         <form method="post">
                             <div class="form-floating mb-3">
                                 <input type="text" class="form-control" name="fullname" id="fullname"
