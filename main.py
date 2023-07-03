@@ -56,6 +56,14 @@ def index():
         return render_template('index.html', user=user)
     else:
         return redirect('/login')
+    
+@app.route("/profile_update")
+def update():
+    if current_user.is_authenticated:
+        user = current_user
+        return render_template('update.html', user=user)
+    else:
+        return redirect('/login')
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -104,6 +112,35 @@ def register():
 def register_success():
     username = session.get('username')
     return render_template("username.html", username=username)
+
+def update_user_data(username, nama, panggilan, ktp, hp, sandi):
+    user = User.query.filter_by(username=username).first()
+    if user:
+        user.nama = nama
+        user.panggilan = panggilan
+        user.ktp = ktp
+        user.hp = hp
+        user.sandi = sandi
+        db.session.commit()
+    else:
+        return
+
+@app.route('/update_user_data/<int:id>', methods=['GET', 'POST'])
+def update_user_data(id):
+    user = User.query.get_or_404(id)
+    if request.method == 'POST':
+        user.username = request.form['username']
+        user.hp = request.form['hp']
+        user.sandi = request.form['sandi']
+        user.panggilan = request.form['panggilan']
+        user.ktp = request.form['ktp']
+        user.nama = request.form['nama']
+        db.session.commit()
+        flash('Data berhasil diperbarui!', category='success')
+        return redirect('/')
+    else:
+        user_data = User.query.filter_by(username=current_user.username).first()
+        return render_template('update.html', user_data=user_data)
 
 if __name__ == '__main__':
     app.run(debug=True)

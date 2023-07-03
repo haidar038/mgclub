@@ -1,69 +1,51 @@
-{% extends 'base.html' %}
-
-{% block body %}
+{% extends 'base.html' %} {% block body %}
 
 <body class="main-bg h-100">
     <!-- Login Form -->
     <div class="container h-100">
         <div class="row justify-content-center align-items-center h-100">
-            <img class="w-25 mb-4" src="{{ url_for('static', filename='logo.webp') }}" alt="Logo Muara Group">
-            <div class="col-lg-4 col-md-6 col-sm-6">
+            <img class="w-25 mb-4" src="{{ url_for('static', filename='logo.webp') }}" alt="Logo Muara Group" />
+            <div class="col-lg-4 col-md-6 col-sm-6 col-xl-6">
                 <div class="card shadow mb-4">
                     <div class="card-title text-center border-bottom">
                         <h2 class="p-3">Daftar</h2>
                     </div>
                     <div class="card-body">
-                        {% with messages = get_flashed_messages(with_categories=true) %}
-                        {% if messages %}
-                        {% for category, message in messages %}
+                        {% with messages = get_flashed_messages(with_categories=true) %} {% if messages %} {% for category, message in messages %}
                         <div class="alert alert-{{ category }} mb-3 alert-dismissible" role="alert">
                             <strong>{{ message }}</strong>
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"
-                                aria-label="Close"></button>'
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>'
                         </div>
-                        {% endfor %}
-                        {% endif %}
-                        {% endwith %}
+                        {% endfor %} {% endif %} {% endwith %}
                         <form method="post">
                             <div class="form-floating mb-3">
-                                <input type="text" class="form-control" name="fullname" id="fullname"
-                                    placeholder="name@example.com">
+                                <input type="text" class="form-control" name="fullname" id="fullname" placeholder="name@example.com" />
                                 <label for="fullname">Nama Lengkap</label>
                             </div>
                             <div class="form-floating mb-3">
-                                <input type="text" class="form-control" name="panggilan" id="panggilan"
-                                    placeholder="name@example.com">
+                                <input type="text" class="form-control" name="panggilan" id="panggilan" placeholder="name@example.com" />
                                 <label for="panggilan">Nama Panggilan</label>
                             </div>
                             <div class="form-floating mb-3">
-                                <input type="tel" class="form-control" name="hp" id="hp" placeholder="08xxxxxxxxxx">
+                                <input type="tel" class="form-control" name="hp" id="hp" placeholder="08xxxxxxxxxx" />
                                 <label for="hp">No. HP</label>
                             </div>
                             <div class="form-floating mb-3">
-                                <input type="text" class="form-control" name="ktp" id="ktp"
-                                    placeholder="82xxxxxxxxxxxxx">
+                                <input type="text" class="form-control" name="ktp" id="ktp" placeholder="82xxxxxxxxxxxxx" />
                                 <label for="ktp">No. KTP</label>
                             </div>
                             <div class="form-floating mb-3">
-                                <input type="password" class="form-control" name="sandi" id="sandi"
-                                    placeholder="Kata Sandi">
+                                <input type="password" class="form-control" name="sandi" id="sandi" placeholder="Kata Sandi" />
                                 <label for="sandi">Kata Sandi</label>
                             </div>
                             <div class="d-grid mb-4">
                                 <button type="submit" class="btn text-light main-bg">Daftar!</button>
                             </div>
-                            <div class="text-center">
-                                Sudah menjadi member? <a href="{{ url_for('login') }}"
-                                    class="nav-link link-primary fw-bold">Login
-                                    disini</a>
-                            </div>
+                            <div class="text-center">Sudah menjadi member? <a href="{{ url_for('login') }}" class="nav-link link-primary fw-bold">Login disini</a></div>
                         </form>
                     </div>
                 </div>
-                <a href="{{ url_for('index') }}"
-                    class="nav-link link-light fw-bold text-center link-underline-opacity-100">&larr;
-                    Kembali ke
-                    beranda</a>
+                <a href="{{ url_for('index') }}" class="nav-link link-light fw-bold text-center link-underline-opacity-100">&larr; Kembali ke beranda</a>
             </div>
         </div>
     </div>
