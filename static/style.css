@@ -15,6 +15,10 @@ html{
     background: var(--main-bg) !important;
 }
 
+.v-card{
+    background-color: #fff;
+}
+
 .card_number{
     font-family: "Poppins";
     font-size: 1.75rem;
@@ -29,7 +33,12 @@ html{
 @media screen and (max-width:768px) {
     .card_number{
         font-size: .8rem;
-        transform: translate(0%, 7rem);
+        transform: translate(0%, 8rem);
+    }
+}
 
+@media screen and (min-height:1920px) {
+    .card_number{
+        transform: translate(0%, 8rem);
     }
 }
