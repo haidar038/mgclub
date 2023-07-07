@@ -17,17 +17,20 @@ class User(db.Model, UserMixin):
     hp = db.Column(db.String(15), unique=True)
     sandi = db.Column(db.String(20))
     username = db.Column(db.String(100))
+    card_number = db.Column(db.String(20))
     poin = db.Column(db.Integer, default=0)
-    card = db.relationship('Card')
+    # poin = db.relationship('Card', backref='user')
     
     def is_active(self):
         return True  # Ubah logika ini sesuai kebutuhan Anda
     
-class Card(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    card_number = db.Column(db.String(20))
+# class Card(db.Model):
+#     __tablename__ = 'card'
+#     card_number = db.Column(db.String(20))
+#     poin = db.Column(db.Integer, default=0)
+#     id = db.Column(db.Integer, primary_key=True)
     
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+#     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
 
 login_manager = LoginManager()
@@ -39,6 +42,13 @@ def generateusername():
         existing_usernames = User.query.filter_by(username=username).all()
         if username not in existing_usernames:
             return username
+
+def generate_card_number():
+    while True:
+        card_number = ''.join(random.choices(string.ascii_letters + string.digits, k=10))
+        existing_card_numbers = User.query.filter_by(card_number=card_number).all()
+        if card_number not in existing_card_numbers:
+            return card_number
 
 # This function loads a user from the database.
 @login_manager.user_loader
@@ -76,7 +86,7 @@ def login():
             login_user(user)
             return redirect('/')
         else:
-            flash('Periksa Username atau Kata Sandi', category='danger')
+            flash("Periksa Username atau Kata Sandi", category='danger')
             return render_template('login.html')
     else:
         return render_template('login.html')
@@ -95,13 +105,15 @@ def register():
         ktp = request.form['ktp']
         nama = request.form['fullname']
         username = generateusername()
+        card_number = generate_card_number()
+        poin = 0
         session['username'] = username
 
         if User.query.filter_by(hp=hp).first():
             flash('No. HP sudah ada!', category='warning')
             return render_template('register.html')
         else:
-            user = User(hp=hp, sandi=sandi, panggilan=panggilan, ktp=ktp, nama=nama, username=username)
+            user = User(hp=hp, sandi=sandi, panggilan=panggilan, ktp=ktp, nama=nama, username=username, card_number=card_number, poin=poin)
             db.session.add(user)
             db.session.commit()
             return redirect('/register_success')

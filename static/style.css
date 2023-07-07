@@ -2,10 +2,34 @@
     --main-bg: royalblue;
 }
 
+@font-face{
+    font-family: Carre;
+    src: url(./Carre.otf);
+}
+
 html{
     height: 100%;
 }
 
 .main-bg {
     background: var(--main-bg) !important;
+}
+
+.card_number{
+    font-family: "Poppins";
+    font-size: 1.75rem;
+    position: fixed;
+    transform: translate(0%, 12rem);
+    /* right: 26.7rem;
+    top: 21rem;
+    text-transform: uppercase;
+    text-align: left; */
+}
+
+@media screen and (max-width:768px) {
+    .card_number{
+        font-size: .8rem;
+        transform: translate(0%, 7rem);
+
+    }
 }

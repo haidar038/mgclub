@@ -1,19 +1,29 @@
 {% extends 'base.html' %} {% block body %}
 
-<body class="main-bg h-100">
+<body class="h-100">
     <!-- Login Form -->
     <div class="container h-100">
         <div class="row h-100">
-            <div class="col-lg-6 d-flex flex-column justify-content-center align-items-center">
+            <div class="col-lg-6 col-sm-12 d-flex flex-column justify-content-center align-items-center">
                 <img class="w-25 mb-4" src="{{ url_for('static', filename='logo.webp') }}" alt="Logo Muara Group" />
-                <h1 class="text-light text-center mb-3">Halo, {{user.panggilan}}</h1>
-                <h3 class="text-light text-center mb-4">Selamat Datang di MG Club</h3>
-
-                <h4 class="lead text-light text center mb-4">Poin : <strong>{{user.poin}}</strong></h4>
-                <a href="{{ url_for('logout') }}" class="btn btn-light">Logout</a>
+                <h1 class="text-center mb-3">Halo, {{user.panggilan}}</h1>
+                <h3 class="text-center mb-4">Selamat Datang di MG Club</h3>
+                <span class="fs-6 text center mb-4 badge text-bg-primary"><strong>Poin : {{user.poin}}</strong></span>
             </div>
-            <div class="col-lg-6 d-flex flex-column justify-content-center align-items-center">
-                <a href="{{ url_for('update_user_data', id=user.id) }}" class="btn btn-light">Update</a>
+            <div class="col-lg-6 col-sm-12 d-flex flex-column justify-content-center align-items-center">
+                <div class="position-relative d-inline-block">
+                    <span class="card_number">
+                        <div class="d-flex flex-column lh-sm">
+                            <span class="fw-bold text-decoration-underline">{{user.nama}}</span>
+                            <span>{{user.card_number}}</span>
+                        </div>
+                    </span>
+                </div>
+                <img src="../static/card.png" alt="Card" class="d-block w-100" />
+            </div>
+            <div class="col-12 d-flex flex-column">
+                <a href="{{ url_for('update_user_data', id=user.id) }}" class="btn btn-warning fw-bold mb-3">Update</a>
+                <a href="{{ url_for('logout') }}" class="btn btn-warning fw-bold">Logout</a>
             </div>
         </div>
     </div>
