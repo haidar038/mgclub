@@ -136,7 +136,7 @@ def update_user_data(username, nama, panggilan, ktp, hp, sandi):
         db.session.commit()
     else:
         return
-
+    
 @app.route('/update_user_data/<int:id>', methods=['GET', 'POST'])
 def update_user_data(id):
     user = User.query.get_or_404(id)
@@ -153,6 +153,48 @@ def update_user_data(id):
     else:
         user_data = User.query.filter_by(username=current_user.username).first()
         return render_template('update.html', user_data=user_data)
+
+def add_point(poin, username):
+    user = User.query.filter_by(username=username).first()
+    poin = 10
+    if user:
+        user.poin = poin
+        db.session.commit()
+    else:
+        return
+    
+@app.route('/add_point/<int:id>', methods=['GET', 'POST'])
+def add_point(id):
+    user = User.query.get_or_404(id)
+    if request.method == 'POST':
+        user.poin = 10
+        db.session.commit()
+        flash('Poin berhasil diperbarui!', category='success')
+        return redirect('/')
+    else:
+        user_data = User.query.filter_by(username=current_user.username).first()
+        return render_template('index.html', user_data=user_data)
+
+def reset_point(poin, username):
+    user = User.query.filter_by(username=username).first()
+    poin = 0
+    if user:
+        user.poin = poin
+        db.session.commit()
+    else:
+        return
+    
+@app.route('/reset_point/<int:id>', methods=['GET', 'POST'])
+def reset_point(id):
+    user = User.query.get_or_404(id)
+    if request.method == 'POST':
+        user.poin = 0
+        db.session.commit()
+        flash('Poin berhasil diperbarui!', category='success')
+        return redirect('/')
+    else:
+        user_data = User.query.filter_by(username=current_user.username).first()
+        return render_template('index.html', user_data=user_data)
 
 if __name__ == '__main__':
     app.run(debug=True)
