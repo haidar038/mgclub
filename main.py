@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, redirect, flash, session
 from flask_login import current_user, login_user, logout_user, LoginManager, UserMixin
 from flask_sqlalchemy import SQLAlchemy
+from flask_qrcode import QRcode
 import random, string
 
 app = Flask(__name__)
@@ -8,6 +9,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
 app.config['SECRET_KEY'] = 'mg.club'
 
 db = SQLAlchemy(app)
+qrcode = QRcode(app)
 
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
@@ -64,6 +66,14 @@ def index():
     if current_user.is_authenticated:
         user = current_user
         return render_template('index.html', user=user)
+    else:
+        return redirect('/login')
+
+@app.route("/profil")
+def profil():
+    if current_user.is_authenticated:
+        user = current_user
+        return render_template('profil.html', user=user)
     else:
         return redirect('/login')
     

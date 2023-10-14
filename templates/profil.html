@@ -1,0 +1,60 @@
+{% extends 'base.html' %} {% block body %}
+
+<body class="h-100">
+    <!-- Login Form -->
+    <div class="container h-100">
+        <div class="row justify-content-center align-items-center h-100">
+            <div class="col-lg-4 col-md-6 col-sm-6 col-xl-6">
+                <div class="card shadow mb-4 my-5">
+                    <div class="card-title text-center border-bottom">
+                        <h2 class="p-3">Profil Pengguna</h2>
+                    </div>
+                    <div class="card-body">
+                        <table class="table mb-4">
+                            <tr>
+                                <th scope="row">Nama</th>
+                                <td>:</td>
+                                <td>{{ current_user.nama }}</td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Nama Panggilan</th>
+                                <td>:</td>
+                                <td>{{ current_user.panggilan }}</td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Username</th>
+                                <td>:</td>
+                                <td>{{ current_user.username }}</td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Nomor Kartu</th>
+                                <td>:</td>
+                                <td>{{ current_user.card_number }}</td>
+                            </tr>
+                            <tr>
+                                <th scope="row">No. HP</th>
+                                <td>:</td>
+                                <td>{{ current_user.hp }}</td>
+                            </tr>
+                            <tr>
+                                <th scope="row">No. KTP</th>
+                                <td>:</td>
+                                <td>{{ current_user.ktp }}</td>
+                            </tr>
+                        </table>
+                        <div class="badge bg-primary mb-2">QR Code Anda!</div>
+                        <div class="mb-4">
+                            <img src="{{ qrcode(current_user.card_number, box_size=10)  }}" />
+                        </div>
+                        <div class="d-grid mb-4">
+                            <a href="{{ url_for('update_user_data', id=current_user.id) }}" class="btn text-light main-bg">Ubah</a>
+                        </div>
+                    </div>
+                </div>
+                <a href="{{ url_for('index') }}" class="nav-link fw-bold text-center link-underline-opacity-100 mb-5">&larr; Kembali ke beranda</a>
+            </div>
+        </div>
+    </div>
+</body>
+
+{% endblock body %}
