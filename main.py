@@ -25,6 +25,24 @@ class User(db.Model, UserMixin):
     
     def is_active(self):
         return True  # Ubah logika ini sesuai kebutuhan Anda
+
+class Admin(db.Model, UserMixin):
+    id = db.Column(db.Integer, primary_key=True)
+    nama = db.Column(db.String(100))
+    email = db.Column(db.String(100))
+    sandi = db.Column(db.String(20))
+    username = db.Column(db.String(100))
+    
+    def is_active(self):
+        return True  # Ubah logika ini sesuai kebutuhan Anda
+
+class Server(db.Model, UserMixin):
+    id = db.Column(db.Integer, primary_key=True)
+    harga = db.Column(db.String(100))
+    poin = db.Column(db.String(20))
+    
+    def is_active(self):
+        return True  # Ubah logika ini sesuai kebutuhan Anda
     
 # class Card(db.Model):
 #     __tablename__ = 'card'
@@ -159,7 +177,7 @@ def update_user_data(id):
         user.nama = request.form['nama']
         db.session.commit()
         flash('Data berhasil diperbarui!', category='success')
-        return redirect('/')
+        return redirect('/profil')
     else:
         user_data = User.query.filter_by(username=current_user.username).first()
         return render_template('update.html', user_data=user_data)
@@ -172,12 +190,12 @@ def add_point(poin, username):
         db.session.commit()
     else:
         return
-    
+
 @app.route('/add_point/<int:id>', methods=['GET', 'POST'])
 def add_point(id):
     user = User.query.get_or_404(id)
     if request.method == 'POST':
-        user.poin = 10
+        user.poin = user.poin+10
         db.session.commit()
         flash('Poin berhasil diperbarui!', category='success')
         return redirect('/')
@@ -205,6 +223,66 @@ def reset_point(id):
     else:
         user_data = User.query.filter_by(username=current_user.username).first()
         return render_template('index.html', user_data=user_data)
+
+# ============= ADMIN SECTION ============
+@app.route('/admin_dashboard')
+def admin_dashboard():
+    user = User.query.get_or_404().all()
+    if current_user.is_authenticated:
+        return render_template('admin/index.html', user_data=user)
+    else:
+        return redirect('/admin_login')
+
+@app.route('/admin_login', methods=['GET', 'POST'])
+def admin_login():
+    if request.method == 'POST':
+        username = request.form['username']
+        sandi = request.form['sandi']
+
+        admin = Admin.query.filter_by(username=username).first()
+        if admin and admin.sandi == sandi:
+            login_user(admin)
+            return redirect('admin_dashboard')
+        else:
+            flash("Periksa Username atau Kata Sandi", category='danger')
+            return render_template('admin/login.html')
+    else:
+        return render_template('admin/login.html')
+
+@app.route('/admin_register', methods=['GET', 'POST'])
+def admin_register():
+    if request.method == 'POST':
+        sandi = request.form['sandi']
+        email = request.form['email']
+        nama = request.form['nama']
+        username = request.form['username']
+
+        if Admin.query.filter_by(email=email).first():
+            flash('Email sudah terdaftar, gunakan email yang lain!', category='warning')
+            return render_template('admin/register.html')
+        else:
+            admin = Admin(sandi=sandi, nama=nama, username=username, email=email)
+            db.session.add(admin)
+            db.session.commit()
+            return redirect('admin_dashboard')
+    else:
+        return render_template('admin/register.html')
+    
+@app.route('/admin_logout')
+def admin_logout():
+    logout_user()
+    return redirect('admin_login')
+
+# ============= SERVER SIDE ===============
+
+@app.route('/redirect_point/<int:points>', methods=['GET', 'POST'])
+def redirect_point(points):
+    server_point = Server.query.get_or_404(points)
+    if request.method == 'POST':
+        server_point.poin = request.form['poin']
+        db.session.commit()
+    else:
+        return
 
 if __name__ == '__main__':
     app.run(debug=True)

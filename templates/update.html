@@ -10,12 +10,6 @@
                         <h2 class="p-3">Update</h2>
                     </div>
                     <div class="card-body">
-                        {% with messages = get_flashed_messages(with_categories=true) %} {% if messages %} {% for category, message in messages %}
-                        <div class="alert alert-{{ category }} mb-3 alert-dismissible" role="alert">
-                            <strong>{{ message }}</strong>
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>'
-                        </div>
-                        {% endfor %} {% endif %} {% endwith %}
                         <form method="post" action="/update_user_data/{{user_data.id}}">
                             <div class="form-floating mb-3">
                                 <input type="text" value="{{user_data.nama}}" class="form-control" name="nama" id="nama" placeholder="name@example.com" />

@@ -1,6 +1,4 @@
-{% extends 'base.html' %}
-
-{% block body %}
+{% extends 'base.html' %} {% block body %}
 
 <body class="main-bg h-100">
     <!-- Login Form -->
@@ -12,43 +10,31 @@
                         <h2 class="p-3">Login</h2>
                     </div>
                     <div class="card-body">
-                        {% with messages = get_flashed_messages(with_categories=true) %}
-                        {% if messages %}
-                        {% for category, message in messages %}
+                        {% with messages = get_flashed_messages(with_categories=true) %} {% if messages %} {% for category, message in messages %}
                         <div class="alert alert-{{ category }} mb-3 alert-dismissible" role="alert">
                             <strong>{{ message }}</strong>
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"
-                                aria-label="Close"></button>'
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                         </div>
-                        {% endfor %}
-                        {% endif %}
-                        {% endwith %}
+                        {% endfor %} {% endif %} {% endwith %}
                         <form method="post">
                             <div class="form-floating mb-3">
-                                <input type="text" class="form-control" name="username" id="username"
-                                    placeholder="aw8d0">
+                                <input type="text" class="form-control" name="username" id="username" placeholder="aw8d0" />
                                 <label for="username">Username</label>
                             </div>
                             <div class="form-floating mb-3">
-                                <input type="password" class="form-control" name="sandi" id="sandi"
-                                    placeholder="Kata Sandi">
+                                <input type="password" class="form-control" name="sandi" id="sandi" placeholder="Kata Sandi" />
                                 <label for="sandi">Kata Sandi</label>
                             </div>
                             <div class="d-grid mb-4">
                                 <button type="submit" class="btn text-light main-bg">Masuk</button>
                             </div>
-                            <div class="text-center">
-                                Belum menjadi member? <a href="{{ url_for('register') }}"
-                                    class="nav-link link-primary fw-bold">Daftar
-                                    disini</a>
-                            </div>
+                            <div class="text-center">Belum menjadi member? <a href="{{ url_for('register') }}" class="nav-link link-primary fw-bold">Daftar disini</a></div>
                         </form>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-
 </body>
 
 {% endblock body %}
