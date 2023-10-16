@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, redirect, flash, session
 from flask_login import current_user, login_user, logout_user, LoginManager, UserMixin
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import func
 from flask_qrcode import QRcode
 import random, string
 
@@ -228,8 +229,9 @@ def reset_point(id):
 @app.route('/admin_dashboard')
 def admin_dashboard():
     user = User.query.all()
+    user_total = db.session.query(User).count()
     if current_user.is_authenticated:
-        return render_template('admin/index.html', user_data=user)
+        return render_template('admin/index.html', user_data=user, admin=current_user, total=user_total)
     else:
         return redirect('/admin_login')
 
