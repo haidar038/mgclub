@@ -227,7 +227,7 @@ def reset_point(id):
 # ============= ADMIN SECTION ============
 @app.route('/admin_dashboard')
 def admin_dashboard():
-    user = User.query.get_or_404().all()
+    user = User.query.all()
     if current_user.is_authenticated:
         return render_template('admin/index.html', user_data=user)
     else:
