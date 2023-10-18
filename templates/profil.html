@@ -35,11 +35,6 @@
                                 <td>{{ current_user.username }}</td>
                             </tr>
                             <tr>
-                                <th scope="row">Nomor Kartu</th>
-                                <td>:</td>
-                                <td>{{ current_user.card_number }}</td>
-                            </tr>
-                            <tr>
                                 <th scope="row">No. HP</th>
                                 <td>:</td>
                                 <td>{{ current_user.hp }}</td>
@@ -50,9 +45,13 @@
                                 <td>{{ current_user.ktp }}</td>
                             </tr>
                         </table>
-                        <div class="badge bg-primary mb-2">QR Code Anda!</div>
-                        <div class="mb-4">
-                            <img src="{{ qrcode(current_user.card_number, box_size=10)  }}" />
+                        <!-- <div class="badge bg-primary mb-2">QR Code Anda!</div> -->
+                        <div class="d-flex flex-column justify-content-center">
+                            <div class="badge bg-primary mb-2">Nomor Kartu dan Barcode Anda!</div>
+                            <div class="mb-4 text-center">
+                                <!-- <img src="{{ qrcode(current_user.card_number, box_size=10)  }}" /> -->
+                                <img src="data:image/png;base64,{{ cardnumber }}" alt="" width="300px" />
+                            </div>
                         </div>
                         <div class="d-grid mb-4">
                             <a href="{{ url_for('update_user_data', id=current_user.id) }}" class="btn text-light main-bg">Ubah</a>
