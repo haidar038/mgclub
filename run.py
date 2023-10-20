@@ -3,7 +3,7 @@ from flask_login import current_user, login_user, logout_user
 from barcode import Code128, generate
 from barcode.writer import ImageWriter
 
-from models import User, Admin, Card
+from models import User, Admin, Card, Product
 from app_config import login_manager, db, bcrypt, app
 
 import random, string, io, base64
@@ -240,6 +240,24 @@ def admin_logout():
 #         db.session.commit()
 #     else:
 #         return
+
+# ============= PRODUCT PAGE =============
+@app.route('/product_page', methods=['POST', 'GET'])
+def product_page():
+    product = Product.query.all()
+    if request.method == 'POST':
+        product_name = request.form['product_name']
+        product_price = request.form['product_price']
+        product_code = request.form['product_code']
+        
+        get_product = Product(product_name=product_name, product_price=product_price, product_code=product_code)
+        db.session.add(get_product)
+        db.session.commit()
+        flash("Produk berhasil ditambahkan", category='success')
+        return redirect('product_page')
+    else:
+        return render_template('admin/product_page.html', product=product)
+
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)

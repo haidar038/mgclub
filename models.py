@@ -44,6 +44,12 @@ class Admin(db.Model, UserMixin):
     def is_active(self):
         # Ubah logika ini sesuai kebutuhan Anda
         return True
+    
+class Product(db.Model):
+    id = Column(Integer, primary_key=True)
+    product_name = Column(String(100))
+    product_price = Column(Integer)
+    product_code = Column(String(100), unique=True)
 
 # class Server(db.Model, UserMixin):
 #     id = db.Column(db.Integer, primary_key=True)
