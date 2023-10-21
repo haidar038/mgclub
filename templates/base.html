@@ -17,9 +17,12 @@
         <link rel="mask-icon" href="{{ url_for('static', filename='favicon/safari-pinned-tab.svg' ) }}" color="#5bbad5" />
         <meta name="msapplication-TileColor" content="#da532c" />
         <meta name="theme-color" content="#ffffff" />
+
+        {{ toastr.include_jquery() }} {{ toastr.include_toastr_css() }} {{ toastr.message() }}
     </head>
     {% block body %} {% endblock body %}
     <script>
         feather.replace();
     </script>
+    {{ toastr.include_toastr_js() }}
 </html>

@@ -2,12 +2,12 @@
     --main-bg: royalblue;
 }
 
-@font-face{
+@font-face {
     font-family: Carre;
     src: url(./Carre.otf);
 }
 
-html{
+html {
     height: 100%;
 }
 
@@ -15,11 +15,11 @@ html{
     background: var(--main-bg) !important;
 }
 
-.v-card{
+.v-card {
     background-color: #fff;
 }
 
-.card_number{
+.card_number {
     font-family: "Poppins";
     font-size: 1.75rem;
     position: fixed;
@@ -30,15 +30,15 @@ html{
     text-align: left; */
 }
 
-@media screen and (max-width:768px) {
-    .card_number{
-        font-size: .8rem;
+@media screen and (max-width: 768px) {
+    .card_number {
+        font-size: 0.8rem;
         transform: translate(0%, 8rem);
     }
 }
 
-@media screen and (min-height:1920px) {
-    .card_number{
+@media screen and (min-height: 1920px) {
+    .card_number {
         transform: translate(0%, 8rem);
     }
 }

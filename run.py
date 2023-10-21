@@ -1,6 +1,6 @@
-from flask import render_template, session, request, redirect, flash
+from flask import render_template, session, request, redirect, flash, url_for
 from flask_login import current_user, login_user, logout_user
-from barcode import Code128, generate
+from barcode import Code128
 from barcode.writer import ImageWriter
 
 from models import User, Admin, Card, Product
@@ -242,6 +242,9 @@ def admin_logout():
 #         return
 
 # ============= PRODUCT PAGE =============
+def clean_numeric_value(value):
+    return int(value.replace(".", "").replace(",", ""))
+
 @app.route('/product_page', methods=['POST', 'GET'])
 def product_page():
     product = Product.query.all()
@@ -250,13 +253,36 @@ def product_page():
         product_price = request.form['product_price']
         product_code = request.form['product_code']
         
+        product_price = clean_numeric_value(product_price)
+
         get_product = Product(product_name=product_name, product_price=product_price, product_code=product_code)
         db.session.add(get_product)
         db.session.commit()
-        flash("Produk berhasil ditambahkan", category='success')
+        flash({'title':'Sukses!', 'message':'Produk berhasil dihapus'}, category='success')
         return redirect('product_page')
     else:
-        return render_template('admin/product_page.html', product=product)
+        encoded_image = []
+        for prod in product:
+            barcode = Code128(prod.product_code, writer=ImageWriter())
+            buffer = io.BytesIO()
+            barcode.write(buffer)
+            buffer.seek(0)
+
+            encoded_image = base64.b64encode(buffer.read()).decode('utf-8')
+            # encoded_images.append(encoded_image)
+
+        return render_template('admin/product_page.html', product=product, encoded_images=encoded_image)
+        # return render_template('admin/product_page.html', product=product)
+
+@app.route('/delete/<id>')
+def delete_product(id):
+    product = Product.query.get(id)
+
+    db.session.delete(product)
+    db.session.commit()
+
+    flash({'title':'Peringatan!', 'message':'Produk berhasil dihapus'}, category='error')
+    return redirect(url_for('product_page'))
 
 
 if __name__ == '__main__':
