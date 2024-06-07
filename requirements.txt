@@ -9,3 +9,5 @@ Flask-QRcode==3.1.0
 python-barcode==0.15.1
 Flask-Bcrypt==1.0.1
 Flask-Toastr==0.5.8
+flask-migrate==4.0.7
+telnyx==2.1.1

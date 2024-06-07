@@ -1,12 +1,19 @@
-from flask import render_template, session, request, redirect, flash, url_for
-from flask_login import current_user, login_user, logout_user
+from flask import render_template, session, request, redirect, flash, url_for, make_response, abort
+from flask_login import current_user, login_user, logout_user, login_required
 from barcode import Code128
 from barcode.writer import ImageWriter
+from werkzeug.utils import secure_filename
 
-from models import User, Admin, Card, Product
+from models import User, Admin, Card, Product, Transaction
 from app_config import login_manager, db, bcrypt, app
 
-import random, string, io, base64
+import random, string, io, base64, qrcode, os, datetime
+
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
+
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def generateusername():
     while True:
@@ -24,14 +31,15 @@ def generate_card_number():
 
 # This function loads a user from the database.
 @login_manager.user_loader
-def load_user(role_id):
+def load_user(user_id):
     """Loads a user from the database."""
-    admin = Admin.query.filter_by(role_id=1).first()
-    user = User.query.filter_by(role_id=2).first()
-    if admin:
-        return Admin.query.get(role_id)
-    elif user:
-        return User.query.get(role_id)
+    user = User.query.get(user_id)
+    if user is not None:
+        return user
+    admin = Admin.query.get(user_id)
+    if admin is not None:
+        return admin
+    return None
 
 with app.app_context():
     db.create_all()
@@ -42,38 +50,63 @@ def index():
         if current_user.role_id == 2:
             user = current_user
             card = Card.query.filter_by(user_id=user.id).first()
-            return render_template('index.html', user=user, card=card)
+
+            # Generate QR Code 
+            qr = qrcode.QRCode(version=1, box_size=5, border=2)
+            qr.add_data(card.card_number)
+            qr.make(fit=True)
+            img = qr.make_image(fill_color="black", back_color="white")
+
+            img_buffer = io.BytesIO()
+            img.save(img_buffer, format='PNG')
+            img_buffer.seek(0)
+            qr_code_data = base64.b64encode(img_buffer.read()).decode()
+
+            return render_template('index.html', user=user, card=card, cardnumber=qr_code_data)
         else:
             return redirect("/admin_dashboard")
     else:
         return redirect('/login')
 
-@app.route("/profil")
-def profil():
-    if current_user.is_authenticated:
-        user = current_user
-        card = Card.query.filter_by(user_id=user.id).first()
+@app.route('/profile_picture/<int:user_id>')
+def profile_picture(user_id):
+    user = User.query.get_or_404(user_id)
+    if user.profile_picture:
+        response = make_response(user.profile_picture)
+        response.headers.set('Content-Type', 'image/jpeg')  # Sesuaikan tipe konten jika perlu
+        return response
+    else:
+        return app.send_static_file('images/default_profile.jpg')  # Ganti dengan path gambar default Anda
 
-        # Generate barcode
-        cardnumber = Code128(card.card_number, writer=ImageWriter())
-        buffer = io.BytesIO()
-        cardnumber.write(buffer)
-        buffer.seek(0)
-        
-        # Encode barcode image to base64
-        encoded_image = base64.b64encode(buffer.read()).decode('utf-8')
-        
-        return render_template('profil.html', user=user, card=card, cardnumber=encoded_image)
+@app.route('/update_user_data/<int:id>', methods=['GET', 'POST'])
+def update_user_data(id):
+    user = User.query.get_or_404(id)
+    if request.method == 'POST':
+        user.username = request.form['username']
+        user.hp = request.form['hp']
+        if request.form['sandi']:  # Periksa apakah password baru diberikan
+            user.sandi = bcrypt.generate_password_hash(request.form['sandi']).decode('utf-8')
+        if 'profile_picture' in request.files:
+            file = request.files['profile_picture']
+            if file and allowed_file(file.filename):
+                filename = secure_filename(file.filename)
+                file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                file.save(file_path)
+
+                # Baca isi file sebagai data biner
+                with open(file_path, 'rb') as img_file:
+                    img_data = img_file.read()
+
+                # Simpan data biner ke database
+                user.profile_picture = img_data 
+        user.panggilan = request.form['panggilan']
+        user.ktp = request.form['ktp']
+        user.nama = request.form['nama']
+        db.session.commit()
+        flash('Data berhasil diperbarui!', category='success')
+        return redirect('/')
     else:
-        return redirect('/login')
-    
-@app.route("/profile_update")
-def update():
-    if current_user.is_authenticated:
-        user = current_user
-        return render_template('update.html', user=user)
-    else:
-        return redirect('/login')
+        return render_template('index.html', user=user)
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -84,6 +117,7 @@ def login():
         user = User.query.filter_by(username=username).first()
         if user and bcrypt.check_password_hash(user.sandi, sandi):
             login_user(user)
+            flash(f"Selamat Datang {user.nama}", category='success')
             return redirect('/')
         else:
             flash("Periksa Username atau Kata Sandi", category='danger')
@@ -124,56 +158,32 @@ def register():
     else:
         return render_template('register.html')
 
-    
 @app.route('/register_success')
 def register_success():
     username = session.get('username')
     return render_template("username.html", username=username)
 
-def update_user_data(username, nama, panggilan, ktp, hp, sandi):
-    user = User.query.filter_by(username=username).first()
-    if user:
-        user.nama = nama
-        user.panggilan = panggilan
-        user.ktp = ktp
-        user.hp = hp
-        user.sandi = sandi
-        db.session.commit()
-    else:
-        return
-    
-@app.route('/update_user_data/<int:id>', methods=['GET', 'POST'])
-def update_user_data(id):
-    user = User.query.get_or_404(id)
-    if request.method == 'POST':
-        user.username = request.form['username']
-        user.hp = request.form['hp']
-        user.sandi = request.form['sandi']
-        user.panggilan = request.form['panggilan']
-        user.ktp = request.form['ktp']
-        user.nama = request.form['nama']
-        db.session.commit()
-        flash('Data berhasil diperbarui!', category='success')
-        return redirect('/profil')
-    else:
-        user_data = User.query.filter_by(username=current_user.username).first()
-        return render_template('update.html', user_data=user_data)
-
-@app.route('/add_point/<int:id>', methods=['GET', 'POST'])
+@app.route('/add_point/<int:id>', methods=['POST'])
 def add_point(id):
-    user_card = Card.query.get_or_404(id)
-    if request.method == 'POST':
-        user_card.poin = user_card.poin+10
+    card = Card.query.get_or_404(id)
+    if card:
+        card.poin += 10  # Tambahkan 10 poin (sesuaikan dengan logika Anda)
         db.session.commit()
-        return redirect('/')
-    
-@app.route('/reset_point/<int:id>', methods=['GET', 'POST'])
+        flash('Poin berhasil ditambahkan!', category='success')
+    else:
+        flash('Kartu tidak ditemukan!', category='error')
+    return redirect('/')  # Redirect kembali ke halaman dashboard
+
+@app.route('/reset_point/<int:id>', methods=['POST'])
 def reset_point(id):
-    user_card = Card.query.get_or_404(id)
-    if request.method == 'POST':
-        user_card.poin = 0
+    card = Card.query.get_or_404(id)
+    if card:
+        card.poin = 0  # Reset poin menjadi 0
         db.session.commit()
-        return redirect('/')
+        flash('Poin berhasil direset!', category='success')
+    else:
+        flash('Kartu tidak ditemukan!', category='error')
+    return redirect('/')  # Redirect kembali ke halaman dashboard
 
 # ============= ADMIN SECTION ============
 @app.route('/admin_dashboard')
@@ -230,17 +240,6 @@ def admin_logout():
     logout_user()
     return redirect('admin_login')
 
-# ============= SERVER SIDE ===============
-
-# @app.route('/redirect_point/<int:points>', methods=['GET', 'POST'])
-# def redirect_point(points):
-#     server_point = Server.query.get_or_404(points)
-#     if request.method == 'POST':
-#         server_point.poin = request.form['poin']
-#         db.session.commit()
-#     else:
-#         return
-
 # ============= PRODUCT PAGE =============
 def clean_numeric_value(value):
     return int(value.replace(".", "").replace(",", ""))
@@ -284,6 +283,94 @@ def delete_product(id):
     flash({'title':'Peringatan!', 'message':'Produk berhasil dihapus'}, category='error')
     return redirect(url_for('product_page'))
 
+# ============= KASIR PAGE ===============
+@app.route('/cashier', methods=['GET', 'POST'])
+# @login_required
+def cashier():
+    # if current_user.role_id != 1: 
+    #     abort(403)  # Hanya kasir yang boleh akses
+
+    products = Product.query.all()
+
+    if request.method == 'POST':
+        card_number = request.form['card_number']
+        # ... (ambil data produk yang diinput)
+
+        card = Card.query.filter_by(card_number=card_number).first()
+        if not card:
+            flash('Kartu tidak ditemukan', 'danger')
+            return redirect('/cashier')
+
+        # ... (hitung total harga, diskon, poin)
+        total_price = 0 # ... (hitung total harga produk)
+        discount = 0
+        if total_price >= 20000:
+            discount = 0.05 * total_price
+            if total_price >= 20000:
+                card.poin += 2
+            if total_price >= 50000:
+                card.poin += 5
+            if total_price >= 100000:
+                card.poin += 10
+        final_price = total_price - discount
+
+        # ... (simpan data transaksi ke database)
+        transaction = Transaction(
+            card_number=card_number,
+            total_price=total_price,
+            discount=discount,
+            final_price=final_price,
+            # ... (data transaksi lainnya)
+        )
+        db.session.add(transaction)
+        db.session.commit()
+
+        flash('Transaksi berhasil!', 'success')
+        return redirect('/cashier') # atau redirect ke halaman detail transaksi
+
+    return render_template('cashier.html', products=products)
+
+# ============= ADD PRODUCT PAGE ===============
+def generate_product_code(length=8):
+    """Generate kode produk unik yang tidak ada di database."""
+    while True:
+        code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=length))
+        if not Product.query.filter_by(product_code=code).first():
+            return code
+
+@app.route('/add_product', methods=['GET', 'POST'])
+# @login_required
+def add_product():
+    # if current_user.role_id != 1: 
+    #     abort(403)
+
+    if request.method == 'POST':
+        product_name = request.form['product_name']
+        product_price = request.form['product_price']
+
+        # Generate kode produk unik
+        product_code = generate_product_code()
+
+        # Generate barcode
+        barcode = Code128(product_code, writer=ImageWriter())
+        buffer = io.BytesIO()
+        barcode.write(buffer)
+        buffer.seek(0)
+        encoded_image = base64.b64encode(buffer.read()).decode('utf-8')
+
+        new_product = Product(
+            product_name=product_name, 
+            product_price=product_price, 
+            product_code=product_code,
+            barcode_image=encoded_image
+        )
+        db.session.add(new_product)
+        db.session.commit()
+
+        flash('Produk berhasil ditambahkan!', 'success')
+        return redirect('/add_product') 
+
+    return render_template('add_product.html')
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)

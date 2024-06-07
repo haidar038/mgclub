@@ -7,6 +7,10 @@
     src: url(./Carre.otf);
 }
 
+* {
+    font-family: 'Poppins';
+}
+
 html {
     height: 100%;
 }
@@ -30,10 +34,43 @@ html {
     text-align: left; */
 }
 
+
+.profile-picture {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.member-card {
+    background: linear-gradient(to right, #e91e63, #9c27b0);
+    color: #fff;
+}
+
+.member-card .card-title {
+    font-weight: bold;
+}
+
+.member-card .card-text {
+    margin-bottom: 0.5rem;
+}
+
+.member-card img {
+    max-width: 100%;
+    height: auto;
+}
+
 @media screen and (max-width: 768px) {
     .card_number {
         font-size: 0.8rem;
         transform: translate(0%, 8rem);
+    }
+    .member-card {
+        text-align: center;
+    }
+
+    .member-card img {
+        margin: 1rem auto;
     }
 }
 

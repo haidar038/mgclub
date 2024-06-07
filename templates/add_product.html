@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+
+{% block body %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col">
+            <h1>Tambah Produk</h1>
+            
+            <form method="POST">
+                <div class="mb-3">
+                    <label for="product_name" class="form-label">Nama Produk:</label>
+                    <input type="text" class="form-control" id="product_name" name="product_name" required>
+                </div>
+                <div class="mb-3">
+                    <label for="product_price" class="form-label">Harga:</label>
+                    <input type="number" class="form-control" id="product_price" name="product_price" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Tambahkan Produk</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
