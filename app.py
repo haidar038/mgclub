@@ -86,19 +86,19 @@ def update_user_data(id):
         user.hp = request.form['hp']
         if request.form['sandi']:  # Periksa apakah password baru diberikan
             user.sandi = bcrypt.generate_password_hash(request.form['sandi']).decode('utf-8')
-        if 'profile_picture' in request.files:
-            file = request.files['profile_picture']
-            if file and allowed_file(file.filename):
-                filename = secure_filename(file.filename)
-                file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-                file.save(file_path)
+            if 'profile_picture' in request.files:
+                file = request.files['profile_picture']
+                if file and allowed_file(file.filename):
+                    filename = secure_filename(file.filename)
+                    file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                    file.save(file_path)
 
-                # Baca isi file sebagai data biner
-                with open(file_path, 'rb') as img_file:
-                    img_data = img_file.read()
+                    # Baca isi file sebagai data biner
+                    with open(file_path, 'rb') as img_file:
+                        img_data = img_file.read()
 
-                # Simpan data biner ke database
-                user.profile_picture = img_data 
+                    # Simpan data biner ke database
+                    user.profile_picture = img_data 
         user.panggilan = request.form['panggilan']
         user.ktp = request.form['ktp']
         user.nama = request.form['nama']
