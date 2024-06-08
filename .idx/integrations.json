@@ -1,5 +1,3 @@
 {
-  "firebase_hosting": {
-    "deploymentHostingUrl": "https://mgclub-5ca06.web.app"
-  }
+  "cloud_run_deploy": {}
 }

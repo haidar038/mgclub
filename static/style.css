@@ -1,81 +1,98 @@
 :root {
-    --main-bg: royalblue;
+  --main-bg: royalblue;
 }
 
 @font-face {
-    font-family: Carre;
-    src: url(./Carre.otf);
+  font-family: Carre;
+  src: url(./Carre.otf);
 }
 
 * {
-    font-family: 'Poppins';
+  font-family: "Radio Canada Big";
 }
 
 html {
-    height: 100%;
+  height: 100%;
 }
 
 .main-bg {
-    background: var(--main-bg) !important;
+  background: var(--main-bg) !important;
 }
 
 .v-card {
-    background-color: #fff;
+  background-color: #fff;
+}
+
+.profile-picture {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  object-fit: cover;
 }
 
 .card_number {
-    font-family: "Poppins";
-    font-size: 1.75rem;
-    position: fixed;
-    transform: translate(0%, 12rem);
-    /* right: 26.7rem;
+  font-family: "Poppins";
+  font-size: 1.75rem;
+  position: fixed;
+  transform: translate(0%, 12rem);
+  /* right: 26.7rem;
     top: 21rem;
     text-transform: uppercase;
     text-align: left; */
 }
 
-
-.profile-picture {
-    width: 150px;
-    height: 150px;
-    border-radius: 50%;
-    object-fit: cover;
+.member-card {
+  /* background-image: linear-gradient(to right, rgba(156, 39, 176, 0.8), rgba(233, 30, 99, 0.8)), url('path/to/your/background-image.jpg'); */
+  background-size: cover;
+  background-repeat: no-repeat;
+  color: #fff;
 }
 
-.member-card {
-    background: linear-gradient(to right, #e91e63, #9c27b0);
-    color: #fff;
+.member-card.Silver {
+  background-image: url("./silver.jpg");
+  background-position: center;
+  color: #121212;
+}
+
+.member-card.Gold {
+  background-image: url("./gold.jpg");
+  background-position: top center;
+  color: #121212;
+}
+
+.member-card.Platinum {
+  background-image: url("./platinum.jpg");
 }
 
 .member-card .card-title {
-    font-weight: bold;
+  font-weight: bold;
 }
 
 .member-card .card-text {
-    margin-bottom: 0.5rem;
+  margin-bottom: 0.5rem;
 }
 
 .member-card img {
-    max-width: 100%;
-    height: auto;
+  max-width: 100%;
+  height: auto;
 }
 
 @media screen and (max-width: 768px) {
-    .card_number {
-        font-size: 0.8rem;
-        transform: translate(0%, 8rem);
-    }
-    .member-card {
-        text-align: center;
-    }
+  .card_number {
+    font-size: 0.8rem;
+    transform: translate(0%, 8rem);
+  }
+  .member-card {
+    text-align: center;
+  }
 
-    .member-card img {
+  /* .member-card img {
         margin: 1rem auto;
-    }
+    } */
 }
 
 @media screen and (min-height: 1920px) {
-    .card_number {
-        transform: translate(0%, 8rem);
-    }
+  .card_number {
+    transform: translate(0%, 8rem);
+  }
 }

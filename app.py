@@ -1,10 +1,10 @@
-from flask import render_template, session, request, redirect, flash, url_for, make_response, abort
+from flask import render_template, session, request, redirect, flash, url_for, make_response, abort, jsonify
 from flask_login import current_user, login_user, logout_user, login_required
 from barcode import Code128
 from barcode.writer import ImageWriter
 from werkzeug.utils import secure_filename
 
-from models import User, Admin, Card, Product, Transaction
+from models import User, Admin, Card, Product, Transaction, TransactionDetail  # Tambahkan TransactionDetail
 from app_config import login_manager, db, bcrypt, app
 
 import random, string, io, base64, qrcode, os, datetime
@@ -28,6 +28,19 @@ def generate_card_number():
         existing_card_numbers = Card.query.filter_by(card_number=card_number).all()
         if card_number not in existing_card_numbers:
             return card_number
+
+
+with app.app_context():
+    users = User.query.all()
+    for user in users:
+        # Logika untuk menentukan membership awal berdasarkan kriteria Anda
+        if user.total_spending >= 2000000:
+            user.membership = 'Platinum'
+        elif user.total_spending >= 500000:
+            user.membership = 'Gold'
+        else:
+            user.membership = 'Silver'
+    db.session.commit()
 
 # This function loads a user from the database.
 @login_manager.user_loader
@@ -83,30 +96,72 @@ def update_user_data(id):
     user = User.query.get_or_404(id)
     if request.method == 'POST':
         user.username = request.form['username']
+        user.email = request.form['email']
         user.hp = request.form['hp']
-        if request.form['sandi']:  # Periksa apakah password baru diberikan
-            user.sandi = bcrypt.generate_password_hash(request.form['sandi']).decode('utf-8')
-            if 'profile_picture' in request.files:
-                file = request.files['profile_picture']
-                if file and allowed_file(file.filename):
-                    filename = secure_filename(file.filename)
-                    file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-                    file.save(file_path)
-
-                    # Baca isi file sebagai data biner
-                    with open(file_path, 'rb') as img_file:
-                        img_data = img_file.read()
-
-                    # Simpan data biner ke database
-                    user.profile_picture = img_data 
         user.panggilan = request.form['panggilan']
         user.ktp = request.form['ktp']
-        user.nama = request.form['nama']
+        user.nama = request.form['nama'] 
         db.session.commit()
         flash('Data berhasil diperbarui!', category='success')
         return redirect('/')
     else:
         return render_template('index.html', user=user)
+
+@app.route('/update_password/<int:id>', methods=['GET', 'POST'])
+def update_password(id):
+    user = User.query.get_or_404(id)
+
+    if request.method == 'POST':
+        current_password = request.form['current_password']
+        new_password = request.form['new_password']
+        confirm_password = request.form['confirm_password']
+        if not bcrypt.check_password_hash(user.sandi, current_password):
+            flash('Kata sandi saat ini tidak cocok.', category='danger')
+            return render_template('index.html', user=user)
+        if new_password != confirm_password:
+            flash('Konfirmasi kata sandi tidak cocok.', category='danger')
+            return render_template('index.html', user=user)
+        user.sandi = bcrypt.generate_password_hash(new_password).decode('utf-8')
+        db.session.commit()
+        flash('Password berhasil diperbarui!', category='success')
+        return redirect('/')
+    else:
+        return render_template('index.html', user=user)
+
+@app.route('/update_profile_picture/<int:user_id>', methods=['POST'])
+@login_required
+def update_profile_picture(user_id):
+    user = User.query.get_or_404(user_id)
+    if 'profile_picture' not in request.files:
+        flash('No file part', 'danger')
+        return redirect(url_for('index'))
+
+    file = request.files['profile_picture']
+    if file.filename == '':
+        flash('No selected file', 'danger')
+        return redirect(url_for('index'))
+
+    if file and allowed_file(file.filename):
+        # Hapus foto profil lama jika ada
+        if user.profile_picture:
+            try:
+                os.remove(os.path.join(app.config['UPLOAD_FOLDER'], user.profile_picture))
+            except Exception as e:
+                print(f"Error deleting old profile picture: {e}")
+
+        filename = secure_filename(file.filename)
+        
+        # Simpan gambar dalam variabel byte
+        file_content = file.read()
+        user.profile_picture = file_content
+        db.session.commit()
+
+        flash('Foto profil berhasil diperbarui!', 'success')
+        return redirect(url_for('index'))
+
+    else:
+        flash('File yang diizinkan hanya JPG, JPEG, dan PNG.', 'danger')
+        return redirect(url_for('index'))
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -133,11 +188,10 @@ def logout():
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
+        email = request.form['emailaddress']
         hp = request.form['hp']
-        sandi = request.form['sandi']
-        panggilan = request.form['panggilan']
         ktp = request.form['ktp']
-        nama = request.form['fullname']
+        sandi = request.form['sandi']
         username = generateusername()
         card_number = generate_card_number()
         poin = 0
@@ -148,7 +202,7 @@ def register():
             return render_template('register.html')
         else:
             hashed_password = bcrypt.generate_password_hash(sandi).decode('utf-8')
-            user = User(hp=hp, sandi=hashed_password, panggilan=panggilan, ktp=ktp, nama=nama, username=username)
+            user = User(hp=hp, sandi=hashed_password, ktp=ktp, username=username, email=email)
             db.session.add(user)
             db.session.commit()
             user_card = Card(card_number=card_number, poin=poin, user_id=user.id)
@@ -285,7 +339,7 @@ def delete_product(id):
 
 # ============= KASIR PAGE ===============
 @app.route('/cashier', methods=['GET', 'POST'])
-# @login_required
+# @login_required  # Aktifkan jika perlu login
 def cashier():
     # if current_user.role_id != 1: 
     #     abort(403)  # Hanya kasir yang boleh akses
@@ -294,39 +348,61 @@ def cashier():
 
     if request.method == 'POST':
         card_number = request.form['card_number']
-        # ... (ambil data produk yang diinput)
+        transaction_data = request.form.getlist('transaction_data[]')  # Ambil data transaksi
 
         card = Card.query.filter_by(card_number=card_number).first()
         if not card:
             flash('Kartu tidak ditemukan', 'danger')
             return redirect('/cashier')
 
-        # ... (hitung total harga, diskon, poin)
-        total_price = 0 # ... (hitung total harga produk)
+        total_price = 0
+        for item_str in transaction_data:
+            product_id, quantity = map(int, item_str.split('-'))  # Pisahkan product_id dan quantity
+            product = Product.query.get(product_id)
+            total_price += product.product_price * quantity
+
         discount = 0
+        # Mendapatkan level membership pengguna
+        membership_level = card.user.membership
+
         if total_price >= 20000:
-            discount = 0.05 * total_price
-            if total_price >= 20000:
-                card.poin += 2
-            if total_price >= 50000:
-                card.poin += 5
-            if total_price >= 100000:
-                card.poin += 10
+            if membership_level == 'Platinum':
+                discount = 0.15 * total_price  # Diskon 15% untuk Platinum
+            elif membership_level == 'Gold':
+                discount = 0.10 * total_price  # Diskon 10% untuk Gold
+            else:
+                discount = 0.05 * total_price  # Diskon 5% untuk Silver
+
         final_price = total_price - discount
 
-        # ... (simpan data transaksi ke database)
-        transaction = Transaction(
+        # Simpan data transaksi utama
+        new_transaction = Transaction(
             card_number=card_number,
             total_price=total_price,
             discount=discount,
             final_price=final_price,
-            # ... (data transaksi lainnya)
+            transaction_date=datetime.datetime.now()  # Tambahkan tanggal transaksi
         )
-        db.session.add(transaction)
+        db.session.add(new_transaction)
+        db.session.commit()
+
+        # Simpan detail transaksi
+        for item_str in transaction_data:
+            product_id, quantity = map(int, item_str.split('-'))
+            product = Product.query.get(product_id)
+
+            new_transaction_detail = TransactionDetail(
+                transaction_id=new_transaction.id,
+                product_id=product_id,
+                quantity=quantity,
+                price=product.product_price
+            )
+            db.session.add(new_transaction_detail)
+
         db.session.commit()
 
         flash('Transaksi berhasil!', 'success')
-        return redirect('/cashier') # atau redirect ke halaman detail transaksi
+        return redirect('/cashier')  # atau redirect ke halaman detail transaksi
 
     return render_template('cashier.html', products=products)
 
