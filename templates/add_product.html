@@ -3,9 +3,9 @@
 {% block body %}
 <div class="container py-5">
     <div class="row">
-        <div class="col">
+        <div class="col-md-6">
             <h1>Tambah Produk</h1>
-            
+
             <form method="POST">
                 <div class="mb-3">
                     <label for="product_name" class="form-label">Nama Produk:</label>
@@ -18,7 +18,41 @@
                 <button type="submit" class="btn btn-primary">Tambahkan Produk</button>
             </form>
         </div>
+        <div class="col-md-6">
+            {% if new_product %}
+                <h2>Barcode Produk Baru</h2>
+                <img src="data:image/png;base64,{{ new_product.barcode_image }}" alt="Barcode for {{ new_product.product_name }}">
+                <p>Kode Produk: <strong>{{ new_product.product_code }}</strong></p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row mt-5"> 
+        <div class="col-md-12"> 
+            <h2>Daftar Produk</h2>
+            <div class="table-responsive">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th scope="col">ID</th>
+                            <th scope="col">Nama Produk</th>
+                            <th scope="col">Harga</th>
+                            <th scope="col">Kode Produk</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for product in products %}
+                            <tr>
+                                <td>{{ product.id }}</td>
+                                <td>{{ product.product_name }}</td>
+                                <td>{{ product.product_price }}</td>
+                                <td>{{ product.product_code }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 </div>
-
 {% endblock %}

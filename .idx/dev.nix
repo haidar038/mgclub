@@ -9,10 +9,12 @@
     # pkgs.go
     pkgs.python311
     pkgs.python311Packages.pip
+    pkgs.python311Packages.pyzbar
+    pkgs.python311Packages.opencv4
     # pkgs.nodejs_20
     # pkgs.nodePackages.nodemon
     pkgs.sqlite
-    pkgs.mysql
+    pkgs.mysql80
   ];
 
   # Sets environment variables in the workspace

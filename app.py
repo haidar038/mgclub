@@ -29,7 +29,6 @@ def generate_card_number():
         if card_number not in existing_card_numbers:
             return card_number
 
-
 with app.app_context():
     users = User.query.all()
     for user in users:
@@ -75,7 +74,7 @@ def index():
             img_buffer.seek(0)
             qr_code_data = base64.b64encode(img_buffer.read()).decode()
 
-            return render_template('index.html', user=user, card=card, cardnumber=qr_code_data)
+            return render_template('index.html', user=current_user, card=card, cardnumber=qr_code_data, showQr=True)
         else:
             return redirect("/admin_dashboard")
     else:
@@ -239,6 +238,16 @@ def reset_point(id):
         flash('Kartu tidak ditemukan!', category='error')
     return redirect('/')  # Redirect kembali ke halaman dashboard
 
+@app.route('/reset_spend/<int:user_id>', methods=['POST'])
+def reset_spend(user_id):
+    user = User.query.get_or_404(user_id)
+    if user:
+        user.reset_spending()
+        flash('Total spending berhasil direset!', category='success')
+    else:
+        flash('User tidak ditemukan!', category='error')
+    return redirect('/')  # Redirect kembali ke halaman dashboard
+
 # ============= ADMIN SECTION ============
 @app.route('/admin_dashboard')
 def admin_dashboard():
@@ -339,72 +348,95 @@ def delete_product(id):
 
 # ============= KASIR PAGE ===============
 @app.route('/cashier', methods=['GET', 'POST'])
-# @login_required  # Aktifkan jika perlu login
 def cashier():
-    # if current_user.role_id != 1: 
-    #     abort(403)  # Hanya kasir yang boleh akses
-
     products = Product.query.all()
+    return render_template('cashier.html', products=products)
 
-    if request.method == 'POST':
-        card_number = request.form['card_number']
-        transaction_data = request.form.getlist('transaction_data[]')  # Ambil data transaksi
+from flask import request, redirect, flash
+import json
 
-        card = Card.query.filter_by(card_number=card_number).first()
-        if not card:
-            flash('Kartu tidak ditemukan', 'danger')
+# ... (kode lainnya di app.py)
+
+@app.route('/process_transaction', methods=['POST'])
+def process_transaction():
+    card_number = request.form.get('card_number')
+    transaction_data = request.form.get('transaction_data')
+    card = Card.query.filter_by(card_number=card_number).first()
+
+    try:
+        transaction_data = json.loads(transaction_data)
+        return render_template('transaction_confirmation.html', transaction_data=transaction_data)
+    except Exception as e:
+        flash('Format data transaksi tidak valid!', 'danger')
+        return redirect('/cashier')
+
+    # Hitung total harga
+    total_price = 0
+    for item in transaction_data:
+        try:
+            product_id, quantity = map(int, item.split('-'))
+            product = Product.query.get(product_id)
+            if product:
+                total_price += product.product_price * quantity
+            else:
+                flash(f'Produk dengan ID {product_id} tidak ditemukan!', 'warning')
+        except ValueError:
+            flash('Format data produk tidak valid!', 'danger')
             return redirect('/cashier')
 
-        total_price = 0
-        for item_str in transaction_data:
-            product_id, quantity = map(int, item_str.split('-'))  # Pisahkan product_id dan quantity
-            product = Product.query.get(product_id)
-            total_price += product.product_price * quantity
-
-        discount = 0
-        # Mendapatkan level membership pengguna
-        membership_level = card.user.membership
-
-        if total_price >= 20000:
-            if membership_level == 'Platinum':
-                discount = 0.15 * total_price  # Diskon 15% untuk Platinum
-            elif membership_level == 'Gold':
-                discount = 0.10 * total_price  # Diskon 10% untuk Gold
-            else:
-                discount = 0.05 * total_price  # Diskon 5% untuk Silver
-
-        final_price = total_price - discount
-
-        # Simpan data transaksi utama
-        new_transaction = Transaction(
-            card_number=card_number,
-            total_price=total_price,
-            discount=discount,
-            final_price=final_price,
-            transaction_date=datetime.datetime.now()  # Tambahkan tanggal transaksi
-        )
+    # --- Proses Transaksi ---
+    try:
+        # Buat objek Transaction
+        new_transaction = Transaction(card_number=card_number, total_price=total_price)
         db.session.add(new_transaction)
         db.session.commit()
 
-        # Simpan detail transaksi
-        for item_str in transaction_data:
-            product_id, quantity = map(int, item_str.split('-'))
-            product = Product.query.get(product_id)
-
-            new_transaction_detail = TransactionDetail(
+        # Tambahkan detail 
+        for item in transaction_data:
+            product_id, quantity = map(int, item.split('-'))
+            transaction_detail = TransactionDetail(
                 transaction_id=new_transaction.id,
                 product_id=product_id,
-                quantity=quantity,
-                price=product.product_price
+                quantity=quantity
             )
-            db.session.add(new_transaction_detail)
+            db.session.add(transaction_detail)
 
         db.session.commit()
 
-        flash('Transaksi berhasil!', 'success')
-        return redirect('/cashier')  # atau redirect ke halaman detail transaksi
+        # Kurangi poin pelanggan berdasarkan total belanja (opsional)
+        # ... (logika untuk mengurangi poin)
 
-    return render_template('cashier.html', products=products)
+        flash('Transaksi berhasil!', 'success')
+        return redirect('/cashier')
+
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Terjadi kesalahan: {e}', 'danger')
+        return redirect('/cashier')
+
+@app.route('/check_card_discount/<card_number>', methods=['POST'])
+def check_card_discount(card_number):
+    card = Card.query.filter_by(card_number=card_number).first()
+    if card:
+        return jsonify({'exists': True, 'discount': card.discount})
+    else:
+        return jsonify({'exists': False, 'discount': 0})
+
+@app.route('/check_product/<barcode>', methods=['POST'])
+def check_product(barcode):
+    product = Product.query.filter_by(product_code=barcode).first()
+    if product:
+        return jsonify({'success': True, 'product': {'id': product.id, 'name': product.product_name, 'price': product.product_price}})
+    else:
+        return jsonify({'success': False})
+
+@app.route('/check_card/<card_number>', methods=['POST'])
+def check_card(card_number):
+    card = Card.query.filter_by(card_number=card_number).first()
+    if card:
+        return jsonify({'exists': True})
+    else:
+        return jsonify({'exists': False})
 
 # ============= ADD PRODUCT PAGE ===============
 def generate_product_code(length=8):
@@ -419,6 +451,7 @@ def generate_product_code(length=8):
 def add_product():
     # if current_user.role_id != 1: 
     #     abort(403)
+    products = Product.query.all()
 
     if request.method == 'POST':
         product_name = request.form['product_name']
@@ -444,9 +477,9 @@ def add_product():
         db.session.commit()
 
         flash('Produk berhasil ditambahkan!', 'success')
-        return redirect('/add_product') 
+        return render_template('add_product.html', new_product=new_product, products=products) 
 
-    return render_template('add_product.html')
+    return render_template('add_product.html', products=products)
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)

@@ -1,97 +1,150 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Halaman Kasir</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
-</head>
-<body>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN"
+      crossorigin="anonymous"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  </head>
 
-<div class="container py-5">
-    <div class="row">
+  <body>
+    <div class="container py-5">
+      <div class="row">
         <h1>Halaman Kasir</h1>
         <div class="col">
-            <form method="POST" id="transaction-form">
-                <div class="mb-3">
-                    <label for="card_number" class="form-label">Nomor Kartu Pelanggan:</label>
-                    <input type="text" class="form-control" id="card_number" name="card_number" required>
-                </div>
-            
-                <h2>Daftar Produk</h2>
-                <table class="table" id="product-table">
-                    <thead>
-                        <tr>
-                            <th>Nama Produk</th>
-                            <th>Harga</th>
-                            <th>Jumlah</th>
-                            <th>Subtotal</th>
-                            <th></th> 
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <!-- Baris produk akan ditambahkan di sini -->
-                    </tbody>
-                </table>
-            
-                <div class="mb-3">
-                    <button type="button" class="btn btn-secondary" onclick="addProductRow()">Tambah Produk</button>
-                </div>
-            
-                <div class="mb-3">
-                    <h3>Total: <span id="total-price">0</span></h3>
-                </div>
+          <div class="mb-4 d-block d-lg-none">
+            <div id="barcode-scanner">
+              <video id="video" width="100%" height="480" autoplay></video>
+              <br />
+              <button type="button" id="start-scan" class="btn btn-primary">
+                Mulai Scan
+              </button>
+            </div>
+          </div>
 
-                <input type="hidden" name="transaction_data" id="transaction_data">
-            
-                <button type="submit" class="btn btn-primary">Proses Transaksi</button>
-            </form>
+          <form
+            id="transaction-form"
+            method="POST"
+            action="/process_transaction"
+          >
+            <div class="mb-3">
+              <label for="card_number" class="form-label"
+                >Nomor Kartu Pelanggan:</label
+              >
+              <input
+                type="text"
+                class="form-control"
+                id="card_number"
+                name="card_number"
+              />
+            </div>
+
+            <h2>Daftar Produk</h2>
+            <div class="table-responsive">
+              <table class="table" id="product-table">
+                <thead>
+                  <tr>
+                    <th>Nama Produk</th>
+                    <th>Harga</th>
+                    <th>Jumlah</th>
+                    <th>Subtotal</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <!-- Baris produk akan ditambahkan di sini -->
+                </tbody>
+              </table>
+            </div>
+
+            <div class="mb-3">
+              <button
+                type="button"
+                class="btn btn-secondary"
+                onclick="addProductRow()"
+              >
+                Tambah Produk
+              </button>
+            </div>
+
+            <div class="mb-3">
+              <h3>
+                Total:
+                <span id="total-price">0</span>
+              </h3>
+            </div>
+
+            <input
+              type="hidden"
+              name="transaction_data"
+              id="transaction_data"
+            />
+
+            <button type="submit" class="btn btn-primary">
+              Proses Transaksi
+            </button>
+          </form>
         </div>
+      </div>
     </div>
-</div>
 
-<script>
-    let productCount = 1;
+    <script>
+      // Simpan data produk dalam variabel (diisi dari Flask)
+      const products = {
+          {% for product in products %}
+              {{ product.id }}: {{ product.product_price }},
+          {% endfor %}
+      };
 
-    // Simpan data produk dalam variabel
-    const products = {
-        {% for product in products %}
-            {{ product.id }}: {{ product.product_price }},
-        {% endfor %}
-    };
+      const productTableBody = document.getElementById('product-table').getElementsByTagName('tbody')[0];
+      let productCount = 1;
 
-    function addProductRow() {
-        const productTable = document.getElementById('product-table').getElementsByTagName('tbody')[0];
-        const newRow = productTable.insertRow();
+      // Fungsi untuk memformat angka ke Rupiah
+      function formatRupiah(number) {
+        return new Intl.NumberFormat('id-ID', {
+          style: 'currency',
+          currency: 'IDR',
+        }).format(number);
+      }
+
+      // Fungsi untuk menambahkan baris produk ke tabel
+      function addProductRow(product = null) {
+        const newRow = productTableBody.insertRow();
 
         // Nama Produk (Dropdown)
         const cell1 = newRow.insertCell();
         const productSelect = document.createElement('select');
         productSelect.className = 'form-select product-select';
-        productSelect.name = `product_id-${productCount}`; 
+        productSelect.name = `product_id-${productCount}`;
         productSelect.required = true;
 
-        let firstProductId = null; // Variabel untuk menyimpan ID produk pertama
-
+        let firstProductId = null;
         {% for product in products %}
-            const option = document.createElement('option');
-            option.value = {{ product.id }}; 
-            option.text = `{{ product.product_name }}`;
-            productSelect.add(option);
+        // Deklarasikan 'option' di dalam loop
+        const option{{loop.index}} = document.createElement('option');
+        option{{loop.index}}.value = {{ product.id }};
+        option{{loop.index}}.text = `{{ product.product_name }}`;
+        productSelect.add(option{{loop.index}});
 
-            // Set ID produk pertama jika belum ada
-            if (firstProductId === null) {
-                firstProductId = {{ product.id }};
-            }
+        // Ambil ID produk pertama untuk ditampilkan sebagai default
+        if (firstProductId === null) {
+          firstProductId = {{ product.id }};
+        }
         {% endfor %}
+
         cell1.appendChild(productSelect);
 
         // Harga
         const cell2 = newRow.insertCell();
         cell2.className = 'product-price align-middle';
-
-        // Set harga awal berdasarkan produk pertama yang dipilih
-        cell2.innerHTML = products[firstProductId]; 
+        cell2.dataset.value = product ? product.price : (products[firstProductId] || 0); // Set harga awal
+        cell2.innerHTML = formatRupiah(parseFloat(cell2.dataset.value));
 
         // Jumlah
         const cell3 = newRow.insertCell();
@@ -100,15 +153,16 @@
         quantityInput.className = 'form-control quantity-input';
         quantityInput.name = `quantity-${productCount}`;
         quantityInput.min = '1';
-        quantityInput.value = '1';
+        quantityInput.value = product ? product.quantity || 1 : 1; // Set jumlah awal
         quantityInput.required = true;
-        quantityInput.addEventListener('change', calculateSubtotal); 
+        quantityInput.addEventListener('change', calculateSubtotal);
         cell3.appendChild(quantityInput);
 
         // Subtotal
         const cell4 = newRow.insertCell();
         cell4.className = 'subtotal align-middle';
-        cell4.innerHTML = '0';
+        cell4.dataset.value = 0;
+        cell4.innerHTML = formatRupiah(0);
 
         // Tombol Hapus
         const cell5 = newRow.insertCell();
@@ -117,67 +171,131 @@
         deleteButton.className = 'btn btn-danger btn-sm';
         deleteButton.innerHTML = 'Hapus';
         deleteButton.onclick = () => {
-            productTable.deleteRow(newRow.rowIndex - 1);
-            calculateTotal(); 
+          productTableBody.deleteRow(newRow.rowIndex - 1);
+          calculateTotal();
         };
         cell5.appendChild(deleteButton);
+
+        // Jika produk dari scan, hitung subtotal
+        if (product) {
+          calculateSubtotal({ target: quantityInput });
+        } else {
+          // Pastikan untuk memanggil calculateSubtotal bahkan jika tidak ada produk dari scan
+          calculateSubtotal({ target: quantityInput });
+        }
 
         productCount++;
         calculateTotal();
 
-        // Event Listener untuk dropdown
+        // Event Listener untuk perubahan produk (dropdown)
         productSelect.addEventListener('change', (event) => {
-            const row = event.target.closest('tr'); 
-            const priceCell = row.querySelector('.product-price');
-            const selectedProductId = event.target.value;
-            const productPrice = products[selectedProductId];
-            
-            // Set harga produk yang benar ke priceCell (konversi ke angka)
-            priceCell.innerHTML = parseFloat(productPrice); 
-    
-            // Panggil calculateSubtotal setelah harga di-update
-            calculateSubtotal({ target: row.querySelector('.quantity-input') }); 
+          const row = event.target.closest('tr');
+          const priceCell = row.querySelector('.product-price');
+          const selectedProductId = parseInt(event.target.value, 10);
+          const productPrice = products[selectedProductId] || 0;
+
+          priceCell.dataset.value = productPrice;
+          priceCell.innerHTML = formatRupiah(productPrice);
+
+          calculateSubtotal({ target: row.querySelector('.quantity-input') });
         });
+      }
 
-        // Hitung subtotal awal saat baris ditambahkan
-        calculateSubtotal({ target: quantityInput });
-    }
-
-    function calculateSubtotal(event) {
+      // Fungsi untuk menghitung subtotal per baris
+      function calculateSubtotal(event) {
         const row = event.target.closest('tr');
-        const price = parseFloat(row.querySelector('.product-price').innerHTML) || 0; // Pastikan price selalu berupa angka
-        const quantity = parseInt(event.target.value) || 0; // Pastikan quantity selalu berupa angka
+        const price = parseFloat(row.querySelector('.product-price').dataset.value) || 0;
+        const quantity = parseInt(event.target.value, 10) || 0;
         const subtotal = price * quantity;
-        row.querySelector('.subtotal').innerHTML = subtotal;
-        calculateTotal();
-    }
 
-    function calculateTotal() {
+        row.querySelector('.subtotal').dataset.value = subtotal;
+        row.querySelector('.subtotal').innerHTML = formatRupiah(subtotal);
+
+        calculateTotal();
+      }
+
+      // Fungsi untuk menghitung total harga
+      function calculateTotal() {
         const subtotals = document.querySelectorAll('.subtotal');
         let totalPrice = 0;
-        subtotals.forEach(subtotal => {
-            totalPrice += parseFloat(subtotal.innerHTML) || 0; // Pastikan subtotal selalu berupa angka
+
+        subtotals.forEach((subtotal) => {
+          totalPrice += parseFloat(subtotal.dataset.value) || 0;
         });
-        document.getElementById('total-price').innerHTML = totalPrice;
 
+        document.getElementById('total-price').innerHTML = formatRupiah(totalPrice);
         updateTransactionData();
-    }
+      }
 
-    function updateTransactionData() {
+      // Fungsi untuk mengupdate data transaksi (di hidden input)
+      function updateTransactionData() {
         const productRows = document.querySelectorAll('#product-table tbody tr');
         const transactionData = [];
 
-        productRows.forEach(row => {
-            const productId = row.querySelector('.product-select').value;
-            const quantity = row.querySelector('.quantity-input').value;
-            transactionData.push(`${productId}-${quantity}`);
+        productRows.forEach((row) => {
+          const productId = row.querySelector('.product-select').value;
+          const quantity = row.querySelector('.quantity-input').value;
+          transactionData.push(`${productId}-${quantity}`);
         });
 
         document.getElementById('transaction_data').value = JSON.stringify(transactionData);
-    }
-</script>
+      }
 
+      // Inisialisasi video dan tombol scan
+      const video = document.getElementById('video');
+      const startScanButton = document.getElementById('start-scan');
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
-</body>
+      // Meminta akses kamera
+      navigator.mediaDevices
+        .getUserMedia({ video: { facingMode: 'environment' } })
+        .then((stream) => {
+          video.srcObject = stream;
+        })
+        .catch((err) => {
+          console.error('Error accessing camera:', err);
+        });
+
+      // Event listener untuk tombol "Mulai Scan"
+      startScanButton.addEventListener('click', async () => {
+        try {
+          const track = video.srcObject.getVideoTracks()[0];
+          const imageCapture = new ImageCapture(track);
+          const bitmap = await imageCapture.grabFrame();
+          const barcodeDetector = new BarcodeDetector();
+          const barcodes = await barcodeDetector.detect(bitmap);
+
+          if (barcodes.length > 0) {
+            const barcodeData = barcodes[0].rawValue;
+            console.log('Barcode terdeteksi:', barcodeData);
+
+            try {
+              const response = await axios.post('/check_product/' + barcodeData);
+
+              if (response.data.success) {
+                // Tambahkan produk ke tabel
+                addProductRow(response.data.product);
+              } else {
+                alert('Produk tidak ditemukan!');
+              }
+            } catch (error) {
+              console.error('Error:', error);
+              alert('Terjadi kesalahan saat memeriksa produk.');
+            }
+          } else {
+            console.log('Barcode tidak terdeteksi.');
+            alert('Barcode tidak terdeteksi. Silahkan coba lagi.');
+          }
+        } catch (error) {
+          console.error('Gagal memproses barcode:', error);
+          alert('Gagal memproses barcode. Silahkan coba lagi.');
+        }
+      });
+    </script>
+
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
+      crossorigin="anonymous"
+    ></script>
+  </body>
 </html>

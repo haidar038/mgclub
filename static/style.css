@@ -8,7 +8,7 @@
 }
 
 * {
-  font-family: "Radio Canada Big";
+  font-family: "Nunito Sans";
 }
 
 html {
@@ -75,6 +75,24 @@ html {
 .member-card img {
   max-width: 100%;
   height: auto;
+}
+
+/* Styling untuk video kamera */
+#video-container {
+  position: relative;
+  width: 100%;
+  height: 0;
+  padding-bottom: 56.25%; /* Rasio aspek 16:9 */
+  overflow: hidden;
+}
+
+#video-container video {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 @media screen and (max-width: 768px) {
